@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect, ChangeEvent } from "react";
+import { useState, useEffect, ChangeEvent } from 'react';
 
 interface Question {
   data: {
@@ -18,46 +18,33 @@ interface Question {
 
 export default function Quizz(props: Question) {
   const questionsData = props.data.questions;
-  const categories: Array<string> = [];
-  const difficulties: Array<string> = [];
-
-  for (let i = 0; i < questionsData.length; i++) {
-    questionsData.map((item) => {
-      for (let i = item.answers.length - 1; i > 0; i--) {
-        const randomIndex = Math.floor(Math.random() * (i + 1));
-
-        [item.answers[i], item.answers[randomIndex]] = [
-          item.answers[randomIndex],
-          item.answers[i],
-        ];
-      }
-    });
-    questionsData.forEach((item) => {
-      if (!categories.includes(item.category)) {
-        categories.push(item.category);
-      }
-      if (!difficulties.includes(item.difficulty)) {
-        difficulties.push(item.difficulty);
-      }
-    });
-  }
+  const [categories, setCategories] = useState(new Set(questionsData.map((item) => item.category)));
+  const [difficulties, setDifficulties] = useState(new Set(questionsData.map((item) => item.difficulty)));
   const [filteredData, setFilteredData] = useState(questionsData);
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState('all');
+  const [selectedAnswer, setSelectedAnswer] = useState('');
 
-  const handleFilterChange = (
-    event: ChangeEvent<HTMLInputElement>,
-    item: string
-  ) => {
-    setFilter(item);
+  useEffect(() => {
+    // Shuffle answers initially
+    questionsData.forEach((item) => {
+      const shuffledAnswers = [...item.answers].sort(() => Math.random() - 0.5);
+      item.answers = shuffledAnswers;
+    });
+  }, []);
 
-    if (item === "all") {
+  const handleFilterChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setFilter(event.target.value);
+
+    if (event.target.value === 'all') {
       setFilteredData(questionsData);
     } else {
-      const filtered = questionsData.filter(
-        (question) => question.category === item
-      );
+      const filtered = questionsData.filter((question) => question.category === event.target.value);
       setFilteredData(filtered);
     }
+  };
+
+  const handleAnswerSelect = (answer: string) => {
+    setSelectedAnswer(answer);
   };
 
   return (
@@ -68,17 +55,21 @@ export default function Quizz(props: Question) {
             type="radio"
             id="all"
             name="categories"
-            onChange={(event) => handleFilterChange(event, "all")}
+            value="all"
+            checked={filter === 'all'}
+            onChange={handleFilterChange}
           />
           all
         </label>
-        {categories.map((item, index: number) => (
+        {Array.from(categories).map((item, index) => (
           <label htmlFor={item} key={index}>
             <input
               type="radio"
               id={item}
               name="categories"
-              onChange={(event) => handleFilterChange(event, item)}
+              value={item}
+              checked={filter === item}
+              onChange={handleFilterChange}
             />
             {item}
           </label>
@@ -89,13 +80,24 @@ export default function Quizz(props: Question) {
           <div key={item.id}>
             <p>{item.question}</p>
             <ul>
-              {item.answers.map((item, index: number) => (
-                <li key={index}>{item}</li>
+              {item.answers.map((answer, index) => (
+                <li key={index}>
+                  <input
+                    type="radio"
+                    id={answer + index}
+                    name="answers"
+                    value={answer}
+                    checked={selectedAnswer === answer}
+                    onChange={() => handleAnswerSelect(answer)}
+                  />
+                  {answer}
+                </li>
               ))}
             </ul>
           </div>
         ))}
       </div>
+      {/* Add logic to handle selected answer and display feedback based on your requirements */}
     </div>
   );
 }
